@@ -1,13 +1,10 @@
-% Function dataProcessing
+% Function dataProcessingERSST
 %
-% Prototype: dataProcessing(dirName,var2Read,yearZero,yearN)
-%            dataProcessing(dirName,var2Read)
+% Prototype: dataProcessingERSST(dirName,var2Read)
 %
 % dirName = Path of the directory that contents the files 
 % var2Read = Variable to be read (use 'ncdump' to check variable names)
-% yearZero (Optional) = Lower year of the data to be read
-% yearN (Optional) = Higher year of the data to be read
-function [] = dataProcessing(dirName,var2Read)
+function [] = dataProcessingERSST(dirName,var2Read)
     if nargin < 1
         error('dataProcessing: dirName is a required input')
     end
@@ -16,8 +13,6 @@ function [] = dataProcessing(dirName,var2Read)
     end
     
     dirData = dir(dirName);  % Get the data for the current directory
-    %months = [31,28,31,30,31,30,31,31,30,31,30,31]; % Reference to the number of days per month
-    %monthsName = {'January','February','March','April','May','June','July','August','September','October','November','December'};
     path = java.lang.String(dirName);
     if(path.charAt(path.length-1) ~= '/')
         path = path.concat('/');
@@ -83,7 +78,7 @@ function [] = dataProcessing(dirName,var2Read)
                 end
                 for i=1:1:length(latDataSet)
                     for j=1:1:length(lonDataSet)
-                            newData(cf,i,j) = timeDataSet(1,1,i,j); %#ok<AGROW>
+                        newData(cf,i,j) = timeDataSet(1,1,i,j); %#ok<AGROW>
                     end
                 end
                 % Writing the data into file
