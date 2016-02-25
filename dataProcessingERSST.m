@@ -19,6 +19,7 @@ function [] = dataProcessingERSST(dirName,var2Read)
     end
     firstOne = 1;
     cf = 1; % Current file position
+    newData = [];
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
