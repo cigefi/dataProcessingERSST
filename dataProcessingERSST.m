@@ -22,13 +22,33 @@ function [] = dataProcessingERSST(dirName,var2Read)
     newData = [];
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
+        latid = 0;
+        latid = 0;
+        var2Readid = 0;
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
             try
+                ncid = netcdf.open(char(fileT),'NC_NOWRITE');
+                [ndim,nvar,natt,unlim] = netcdf.inq(ncid);
+                for i=0:1:nvar-1
+                   [varname,xtype,dimid,natt] = netcdf.inqVar(ncid,i);
+                   switch(varname)
+                       case 'latitude'
+                           latid = i;
+                       case 'longitude'
+                           lonid = i;
+                       case 'lat'
+                           latid = i;
+                       case 'lon'
+                           lonid = i;
+                       case var2Read
+                           var2Readid = i;
+                   end
+                end
                 % Catching data from original file
-                timeDataSet = nc_varget(char(fileT),var2Read);
+                timeDataSet = netcdf.getVar(ncid,var2Readid);%nc_varget(char(fileT),var2Read);
                 if(firstOne == 1)
-                    latDataSet = nc_varget(char(fileT),'lat');
-                    lonDataSet = nc_varget(char(fileT),'lon');
+                    latDataSet = netcdf.getVar(ncid,latid);%nc_varget(char(fileT),'lat');
+                    lonDataSet = netcdf.getVar(ncid,lonid);%nc_varget(char(fileT),'lon');
                     newName = strcat('ERSST. v4.nc');
                     firstOne = 0;
                     
@@ -77,7 +97,8 @@ function [] = dataProcessingERSST(dirName,var2Read)
                     nc_varput(newFile,'latitude',latDataSet);
                     nc_varput(newFile,'longitude',lonDataSet);
                 end
-                newData = cat(3,newData,squeeze(timeDataSet(1,:,:,:)));
+                newData = cat(3,newData,timeDataSet);
+                %newData = cat(3,newData,squeeze(timeDataSet(1,:,:,:)));
                 %for i=1:1:length(latDataSet)
                 %    for j=1:1:length(lonDataSet)
                 %        newData(cf,i,j) = timeDataSet(1,1,i,j); %#ok<AGROW>
