@@ -76,17 +76,20 @@ function [] = dataProcessingERSST(dirName,var2Read)
                     nc_varput(newFile,'latitude',latDataSet);
                     nc_varput(newFile,'longitude',lonDataSet);
                 end
-                for i=1:1:length(latDataSet)
-                    for j=1:1:length(lonDataSet)
-                        newData(cf,i,j) = timeDataSet(1,1,i,j); %#ok<AGROW>
-                    end
-                end
+                newData = cat(1,newData,mean(timeDataSet(1,1,:,:),1));
+                %for i=1:1:length(latDataSet)
+                %    for j=1:1:length(lonDataSet)
+                %        newData(cf,i,j) = timeDataSet(1,1,i,j); %#ok<AGROW>
+                %    end
+                %end
                 % Writing the data into file
                 nc_varput(newFile,var2Read,newData);
                 cf = cf +1;
                 disp(strcat('Data saved:  ',char(fileT.substring(fileT.lastIndexOf('/')+1))));
-            catch
-                continue;
+            catch exception
+                fid = fopen('log.txt', 'at+');
+                fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+                fclose(fid);
             end
         end
     end
