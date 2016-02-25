@@ -29,7 +29,7 @@ function [] = dataProcessingERSST(dirName,var2Read)
                 if(firstOne == 1)
                     latDataSet = nc_varget(char(fileT),'lat');
                     lonDataSet = nc_varget(char(fileT),'lon');
-                    newName = strcat('[CIGEFI] ERSST. v4.nc');
+                    newName = strcat('ERSST. v4.nc');
                     firstOne = 0;
                     
                     % New file configuration
@@ -51,14 +51,14 @@ function [] = dataProcessingERSST(dirName,var2Read)
                     nc_attput(newFile,nc_global,'processing_level',nc_attget(char(fileT),nc_global,'processing_level'));
                     nc_attput(newFile,nc_global,'source',nc_attget(char(fileT),nc_global,'source'));
                     nc_attput(newFile,nc_global,'frequency','monthly');
-                    nc_attput(newFile,nc_global,'reinterpreted_institution','CIGEFI - Universidad de Costa Rica');
-                    nc_attput(newFile,nc_global,'reinterpreted_date',char(datetime('today')));
-                    nc_attput(newFile,nc_global,'reinterpreted_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
+                    nc_attput(newFile,nc_global,'data_analysis_institution','CIGEFI - Universidad de Costa Rica');
+                    nc_attput(newFile,nc_global,'data_analysis_date',char(datetime('today')));
+                    nc_attput(newFile,nc_global,'data_analysis_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
 
                     % Adding file variables
                     monthlyData.Name = var2Read;
                     monthlyData.Datatype = 'single';
-                    monthlyData.Dimension = {'time','latitude', 'longitude'};
+                    monthlyData.Dimension = {'latitude', 'longitude','time'};
                     nc_addvar(newFile,monthlyData);
 
                     timeData.Name = 'time';
@@ -84,7 +84,11 @@ function [] = dataProcessingERSST(dirName,var2Read)
                 %    end
                 %end
                 cf = cf +1;
-                disp(strcat('Data saved:  ',char(fileT.substring(fileT.lastIndexOf('/')+1))));
+                if(mod(cf,100)==0)
+                    disp(strcat('Data saved:  ',char(fileT.substring(fileT.lastIndexOf('/')+1))));
+                end
+                % Writing the data into file
+                nc_varput(newFile,var2Read,newData);
             catch exception
                 fid = fopen('log.txt', 'at+');
                 fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
@@ -92,14 +96,14 @@ function [] = dataProcessingERSST(dirName,var2Read)
             end
         end
     end
-    if ~empty(newData)
-        try
-            % Writing the data into file
-            nc_varput(newFile,var2Read,newData);
-        catch exception
-            fid = fopen('log.txt', 'at+');
-            fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
-            fclose(fid);
-        end 
-    end
+%     if ~isempty(newData)
+%         try
+%             % Writing the data into file
+%             nc_varput(newFile,var2Read,newData);
+%         catch exception
+%             fid = fopen('log.txt', 'at+');
+%             fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
+%             fclose(fid);
+%         end 
+%     end
 end
