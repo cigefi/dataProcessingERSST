@@ -22,34 +22,14 @@ function [] = dataProcessingERSST(dirName,var2Read)
     newData = [];
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
-        latid = 0;
-        latid = 0;
-        var2Readid = 0;
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
             try
-                ncid = netcdf.open(char(fileT),'NC_NOWRITE');
-                [ndim,nvar,natt,unlim] = netcdf.inq(ncid);
-                for i=0:1:nvar-1
-                   [varname,xtype,dimid,natt] = netcdf.inqVar(ncid,i);
-                   switch(varname)
-                       case 'latitude'
-                           latid = i;
-                       case 'longitude'
-                           lonid = i;
-                       case 'lat'
-                           latid = i;
-                       case 'lon'
-                           lonid = i;
-                       case var2Read
-                           var2Readid = i;
-                   end
-                end
                 % Catching data from original file
-                timeDataSet = netcdf.getVar(ncid,var2Readid);%nc_varget(char(fileT),var2Read);
+                timeDataSet = nc_varget(char(fileT),var2Read);
                 if(firstOne == 1)
-                    latDataSet = netcdf.getVar(ncid,latid);%nc_varget(char(fileT),'lat');
-                    lonDataSet = netcdf.getVar(ncid,lonid);%nc_varget(char(fileT),'lon');
-                    newName = strcat('ERSST. v4.nc');
+                    latDataSet = nc_varget(char(fileT),'lat');
+                    lonDataSet = nc_varget(char(fileT),'lon');
+                    newName = strcat('ERSST.v4.nc');
                     firstOne = 0;
                     
                     % New file configuration
@@ -57,8 +37,8 @@ function [] = dataProcessingERSST(dirName,var2Read)
                     nc_create_empty(newFile,'netcdf4-classic');
 
                     % Adding file dimensions
-                    nc_add_dimension(newFile,'latitude',length(latDataSet));
-                    nc_add_dimension(newFile,'longitude',length(lonDataSet));
+                    nc_add_dimension(newFile,'lat',length(latDataSet));
+                    nc_add_dimension(newFile,'lon',length(lonDataSet));
                     nc_add_dimension(newFile,'time',0); % 0 means UNLIMITED dimension
 
                     % Global params
@@ -71,45 +51,39 @@ function [] = dataProcessingERSST(dirName,var2Read)
                     nc_attput(newFile,nc_global,'processing_level',nc_attget(char(fileT),nc_global,'processing_level'));
                     nc_attput(newFile,nc_global,'source',nc_attget(char(fileT),nc_global,'source'));
                     nc_attput(newFile,nc_global,'frequency','monthly');
-                    nc_attput(newFile,nc_global,'data_analysis_institution','CIGEFI - Universidad de Costa Rica');
-                    nc_attput(newFile,nc_global,'data_analysis_date',char(datetime('today')));
-                    nc_attput(newFile,nc_global,'data_analysis_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
+                    nc_attput(newFile,nc_global,'reinterpreted_institution','CIGEFI - Universidad de Costa Rica');
+                    nc_attput(newFile,nc_global,'reinterpreted_date',char(datetime('today')));
+                    nc_attput(newFile,nc_global,'reinterpreted_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
 
                     % Adding file variables
                     monthlyData.Name = var2Read;
                     monthlyData.Datatype = 'single';
-                    monthlyData.Dimension = {'latitude', 'longitude','time'};
+                    monthlyData.Dimension = {'lat', 'lon','time'};
                     nc_addvar(newFile,monthlyData);
 
                     timeData.Name = 'time';
                     timeData.Dimension = {'time'};
                     nc_addvar(newFile,timeData);
 
-                    latData.Name = 'latitude';
-                    latData.Dimension = {'latitude'};
+                    latData.Name = 'lat';
+                    latData.Dimension = {'lat'};
                     nc_addvar(newFile,latData);
 
-                    lonData.Name = 'longitude';
-                    lonData.Dimension = {'longitude'};
+                    lonData.Name = 'lon';
+                    lonData.Dimension = {'lon'};
                     nc_addvar(newFile,lonData);
 
                     % Writing the data into file
-                    nc_varput(newFile,'latitude',latDataSet);
-                    nc_varput(newFile,'longitude',lonDataSet);
+                    nc_varput(newFile,'lat',latDataSet);
+                    nc_varput(newFile,'lon',lonDataSet);
                 end
-                newData = cat(3,newData,timeDataSet);
-                %newData = cat(3,newData,squeeze(timeDataSet(1,:,:,:)));
-                %for i=1:1:length(latDataSet)
-                %    for j=1:1:length(lonDataSet)
-                %        newData(cf,i,j) = timeDataSet(1,1,i,j); %#ok<AGROW>
-                %    end
-                %end
+                newData = cat(3,newData,squeeze(timeDataSet(1,:,:,:)));
                 cf = cf +1;
+                %Writing the data into file
+                nc_varput(newFile,var2Read,newData);
                 if(mod(cf,100)==0)
                     disp(strcat('Data saved:  ',char(fileT.substring(fileT.lastIndexOf('/')+1))));
                 end
-                % Writing the data into file
-                nc_varput(newFile,var2Read,newData);
             catch exception
                 fid = fopen('log.txt', 'at+');
                 fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
@@ -117,14 +91,4 @@ function [] = dataProcessingERSST(dirName,var2Read)
             end
         end
     end
-%     if ~isempty(newData)
-%         try
-%             % Writing the data into file
-%             nc_varput(newFile,var2Read,newData);
-%         catch exception
-%             fid = fopen('log.txt', 'at+');
-%             fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
-%             fclose(fid);
-%         end 
-%     end
 end
