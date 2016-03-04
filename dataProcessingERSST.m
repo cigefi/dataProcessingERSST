@@ -25,10 +25,31 @@ function [] = dataProcessingERSST(dirName,var2Read)
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
             try
                 % Catching data from original file
-                timeDataSet = nc_varget(char(fileT),var2Read);
+                [timeDataSet,err] = readNC(fileT,var2Read);
+                if ~isnan(err)
+                    fid = fopen('log2.txt', 'at+');
+                    fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(err));
+                    fclose(fid);
+                    continue;
+                end
+                %timeDataSet = nc_varget(char(fileT),var2Read);
                 if(firstOne == 1)
-                    latDataSet = nc_varget(char(fileT),'lat');
-                    lonDataSet = nc_varget(char(fileT),'lon');
+                    %latDataSet = nc_varget(char(fileT),'lat');
+                    %lonDataSet = nc_varget(char(fileT),'lon');
+                    [latDataSet,err] = readNC(fileT,'lat');
+                    if ~isnan(err)
+                        fid = fopen('log2.txt', 'at+');
+                        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(err));
+                        fclose(fid);
+                        continue;
+                    end
+                    [lonDataSet,err] = readNC(fileT,'lon');
+                    if ~isnan(err)
+                        fid = fopen('log2.txt', 'at+');
+                        fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(err));
+                        fclose(fid);
+                        continue;
+                    end
                     newName = strcat('ERSST.v4.nc');
                     firstOne = 0;
                     
@@ -51,9 +72,9 @@ function [] = dataProcessingERSST(dirName,var2Read)
                     nc_attput(newFile,nc_global,'processing_level',nc_attget(char(fileT),nc_global,'processing_level'));
                     nc_attput(newFile,nc_global,'source',nc_attget(char(fileT),nc_global,'source'));
                     nc_attput(newFile,nc_global,'frequency','monthly');
-                    nc_attput(newFile,nc_global,'reinterpreted_institution','CIGEFI - Universidad de Costa Rica');
-                    nc_attput(newFile,nc_global,'reinterpreted_date',char(datetime('today')));
-                    nc_attput(newFile,nc_global,'reinterpreted_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
+                    nc_attput(newFile,nc_global,'data_analysis_institution','CIGEFI - Universidad de Costa Rica');
+                    nc_attput(newFile,nc_global,'data_analysis_date',char(datetime('today')));
+                    nc_attput(newFile,nc_global,'data_analysis_contact','Roberto Villegas D: roberto.villegas@ucr.ac.cr');
 
                     % Adding file variables
                     monthlyData.Name = var2Read;
@@ -77,18 +98,53 @@ function [] = dataProcessingERSST(dirName,var2Read)
                     nc_varput(newFile,'lat',latDataSet);
                     nc_varput(newFile,'lon',lonDataSet);
                 end
-                newData = cat(3,newData,squeeze(timeDataSet(1,:,:,:)));
+                newData = cat(3,newData,timeDataSet);
                 cf = cf +1;
+                [~,~,t] = size(newData);
                 %Writing the data into file
-                nc_varput(newFile,var2Read,newData);
+                if t > 1
+                    nc_varput(newFile,var2Read,newData);
+                end
                 if(mod(cf,100)==0)
                     disp(strcat('Data saved:  ',char(fileT.substring(fileT.lastIndexOf('/')+1))));
                 end
             catch exception
-                fid = fopen('log.txt', 'at+');
+                fid = fopen('log2.txt', 'at+');
                 fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(exception.message));
                 fclose(fid);
             end
         end
+    end
+end
+function [data,error] = readNC(path,var2Read)
+    var2Readid = 99999;
+	error = NaN;
+    try
+        % Catching data from original file
+        ncid = netcdf.open(char(path));%,'NC_NOWRITE');
+        [~,nvar,~,~] = netcdf.inq(ncid);
+        for i=0:1:nvar-1
+            [varname,~,~,~] = netcdf.inqVar(ncid,i);
+            switch(varname)
+                case var2Read
+                    var2Readid = i;
+                    break;
+            end
+        end
+        data = netcdf.getVar(ncid,var2Readid,'double')';
+        %data = permute(netcdf.getVar(ncid,var2Readid,'double'),[3 2 1]);%ncread(char(fileT),var2Read);
+        if isempty(data)
+            error = 'Empty dataset';
+        end
+        netcdf.close(ncid)
+    catch exception
+        data = [];
+        try
+            netcdf.close(ncid)
+        catch
+            error = 'I/O ERROR';
+            return;
+        end
+        error = exception.message;
     end
 end
