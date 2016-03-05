@@ -20,6 +20,9 @@ function [] = dataProcessingERSST(dirName,var2Read)
     firstOne = 1;
     cf = 1; % Current file position
     newData = [];
+    if exist('log.txt','file')
+    	delete('log.txt');
+    end
     for f = 3:length(dirData)
         fileT = path.concat(dirData(f).name);
         if(fileT.substring(fileT.lastIndexOf('.')+1).equalsIgnoreCase('nc'))
@@ -27,7 +30,7 @@ function [] = dataProcessingERSST(dirName,var2Read)
                 % Catching data from original file
                 [timeDataSet,err] = readNC(fileT,var2Read);
                 if ~isnan(err)
-                    fid = fopen('log2.txt', 'at+');
+                    fid = fopen('log.txt', 'at+');
                     fprintf(fid, '[ERROR][%s] %s\n %s\n\n',char(datetime('now')),char(fileT),char(err));
                     fclose(fid);
                     continue;
